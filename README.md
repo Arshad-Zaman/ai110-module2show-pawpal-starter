@@ -1,26 +1,6 @@
 # PawPal+ (Module 2 Project)
 
-You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
-
-## Scenario
-
-A busy pet owner needs help staying consistent with pet care. They want an assistant that can:
-
-- Track pet care tasks (walks, feeding, meds, enrichment, grooming, etc.)
-- Consider constraints (time available, priority, owner preferences)
-- Produce a daily plan and explain why it chose that plan
-
-Your job is to design the system first (UML), then implement the logic in Python, then connect it to the Streamlit UI.
-
-## What you will build
-
-Your final app should:
-
-- Let a user enter basic owner + pet info
-- Let a user add/edit tasks (duration + priority at minimum)
-- Generate a daily schedule/plan based on constraints and priorities
-- Display the plan clearly (and ideally explain the reasoning)
-- Include tests for the most important scheduling behaviors
+**PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
 
 ## Getting started
 
@@ -32,34 +12,83 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Suggested workflow
+### Run the demo
 
-1. Read the scenario carefully and identify requirements and edge cases.
-2. Draft a UML diagram (classes, attributes, methods, relationships).
-3. Convert UML into Python class stubs (no logic yet).
-4. Implement scheduling logic in small increments.
-5. Add tests to verify key behaviors.
-6. Connect your logic to the Streamlit UI in `app.py`.
-7. Refine UML so it matches what you actually built.
+```bash
+# CLI demo (see sample output below)
+python main.py
+
+# Streamlit app
+streamlit run app.py
+```
+
+## 📐 UML
+
+`diagrams/uml_final.mmd` is the Mermaid class diagram for the final implementation (classes, attributes, methods, and relationships in `pawpal_system.py`), with `diagrams/uml.mmd` kept as the earlier draft for comparison.
+
+![UML class diagram](diagrams/uml_final.jpg)
 
 ## 🛠️ Implementation Summary
 
 I built four classes in `pawpal_system.py`: Owner, Pet, Task, and Scheduler.
 
-An Owner holds a list of Pets and can get every task across all of them with `get_all_tasks()`. A Pet holds its own list of Tasks and can add or remove them. A Task stores its description, scheduled time, duration, priority, recurrence, and completion status, and can check for time conflicts with another task.
+An Owner holds a list of Pets and gets every task across all of them with `get_all_tasks()`. A Pet holds its own list of Tasks and can add or remove them. A Task stores its description, scheduled time, duration, priority, recurrence, and completion status, and can check for time conflicts with another task.
 
-The Scheduler is the brain. It calls `owner.get_all_tasks()` to pull tasks from every pet at once, sorts them by priority, then fills a time budget greedily, keeping tasks until the available minutes run out. `explain_plan()` turns the result into a readable "Today's Schedule" list. `main.py` wires this together and prints that schedule to the terminal.
+The Scheduler is the brain: it pulls every pet's tasks via `owner.get_all_tasks()`, sorts by priority, then greedily fills a time budget until the available minutes run out. `explain_plan()` turns the result into a readable "Today's Schedule." `main.py` wires this together and prints it to the terminal.
+
+## ✨ Features
+
+- **Sorting by time** — `sort_by_time()` orders every pet's tasks earliest to latest, pushing anything with no scheduled time to the end.
+- **Sorting by priority** — `sort_by_priority()` orders tasks high → medium → low for `generate_plan()`'s greedy pass.
+- **Conflict warnings** — `detect_conflicts()` flags any two tasks that overlap in time on the same day, even across different pets, since one owner can't be in two places at once.
+- **Daily/weekly recurrence** — `mark_complete()` on a recurring task auto-schedules its next occurrence a day or a week out, so recurring care never has to be re-entered by hand.
+- **Filtering** — `filter_tasks()` narrows a task list by pet, completion status, or both.
+- **Time-budgeted planning** — `generate_plan()` greedily fills a day's available minutes with the highest-priority tasks that still fit, and `explain_plan()` turns the result into a readable summary.
 
 ## 🖥️ Sample Output
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
+`python main.py` walks through sorting, recurrence, and conflict detection end to end:
 
 ```
 $ python main.py
-Today's Schedule:
-- Morning walk for Biscuit (30 min, high priority)
-- Evening walk for Biscuit (30 min, high priority)
-- Feeding for Whiskers (10 min, medium priority)
+All tasks (unsorted):
+  Task('Evening walk', 18:00, high, due=2026-10-25)
+  Task('Feeding', 09:00, medium, due=2026-10-25)
+  Task('Cage cleaning', 10:00, low, due=2026-10-25)
+  Task('Morning walk', 08:00, high, due=2026-10-25)
+  Task('Vet checkup', 12:00, high, due=2026-10-25)
+  Task('Evening feeding', 18:20, medium, due=2026-10-25)
+  Task('Brushing', 20:00, low, due=2026-10-25)
+  Task('Litter box cleaning', 11:00, medium, due=2026-10-25)
+
+All tasks (after sort_by_time):
+  Task('Morning walk', 08:00, high, due=2026-10-25)
+  Task('Feeding', 09:00, medium, due=2026-10-25)
+  Task('Cage cleaning', 10:00, low, due=2026-10-25)
+  Task('Litter box cleaning', 11:00, medium, due=2026-10-25)
+  Task('Vet checkup', 12:00, high, due=2026-10-25)
+  Task('Evening walk', 18:00, high, due=2026-10-25)
+  Task('Evening feeding', 18:20, medium, due=2026-10-25)
+  Task('Brushing', 20:00, low, due=2026-10-25)
+
+Marking tasks as done:
+  Morning walk (Biscuit) -> done
+  Feeding (Whiskers) -> done
+  Cage cleaning (Clover) -> done
+
+Completed tasks (filtered from sorted list):
+  Task('Morning walk', 08:00, high, due=2026-10-25)
+  Task('Feeding', 09:00, medium, due=2026-10-25)
+  Task('Cage cleaning', 10:00, low, due=2026-10-25)
+
+Next occurrences auto-scheduled from recurring tasks:
+  Morning walk (Biscuit) -> Task('Morning walk', 08:00, high, due=2026-10-26)
+  Feeding (Whiskers) -> Task('Feeding', 09:00, medium, due=2026-10-26)
+  Cage cleaning (Clover) -> Task('Cage cleaning', 10:00, low, due=2026-11-01)
+
+Conflict check:
+  WARNING: Conflict: 'Evening walk' (Biscuit, 18:00) overlaps with 'Evening feeding' (Clover, 18:20)
+  WARNING: Conflict: 'Grooming appointment' (Biscuit, 09:00) overlaps with 'Feeding' (Whiskers, 09:00)
 ```
 
 ## 🧪 Testing PawPal+
@@ -105,7 +134,7 @@ tests/test_pawpal.py::test_detect_conflicts_handles_empty_and_single_task_lists 
 
 **Confidence Level: ⭐⭐⭐⭐☆ (4/5)**
 
-All 12 tests pass, and they cover the three behaviors I was least sure about going in: whether sorting handles unscheduled tasks correctly, whether recurrence actually advances the due date by the right interval, and whether conflict detection respects day boundaries instead of just comparing raw times. I'm not at 5 stars because the suite only exercises `Scheduler` and `Task`/`Pet` in isolation — `generate_plan()` (the method that chains priority sorting with the time-budget filter) and the Streamlit UI in `app.py` aren't covered yet, so I can't be fully confident in how those pieces behave together.
+All 12 tests pass, covering the three behaviors I was least sure about: unscheduled tasks in sorting, the due-date math in recurrence, and day-boundary handling in conflict detection. Not 5 stars because `generate_plan()` — the method that chains priority sorting with the time-budget filter — and the Streamlit UI aren't covered yet, so I can't vouch for how those pieces behave together.
 
 ## 📐 Smarter Scheduling
 
@@ -126,12 +155,72 @@ All 12 tests pass, and they cover the three behaviors I was least sure about goi
 
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+### What the UI lets you do
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+`app.py` is a Streamlit app with three sections:
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+- **Owner** — enter an owner name, which persists across reruns in `st.session_state`.
+- **Add a Pet** — add a pet (name, species, breed); added pets show up in a table below the form.
+- **Add a Task** — pick one of the owner's pets, then add a task (title, duration, priority, scheduled time). The full task list renders sorted by time, with conflict warnings shown right below it.
+- **Build Schedule** — set the available minutes for the day and click "Generate schedule" to run `generate_plan()` across every pet the owner has, with its own conflict check and a "Why this plan?" explanation.
+
+### Example workflow
+
+1. Add a pet (e.g., Biscuit, a dog).
+2. Add a second pet (e.g., Whiskers, a cat).
+3. Add a task for Biscuit at 09:00 and a task for Whiskers also at 09:00 — the task table (sorted by `sort_by_time()`) shows both, and `detect_conflicts()` immediately flags the overlap with a warning.
+4. Set "Available minutes today" and click "Generate schedule" — `generate_plan()` sorts by priority, greedily fills the time budget, and the resulting plan is displayed sorted by time, with its own conflict check and a readable explanation of why each task was chosen.
+
+### Key Scheduler behaviors shown
+
+- **Sorting** — both the task list and the generated plan are shown in chronological order via `sort_by_time()`, even though `generate_plan()` internally schedules by priority first.
+- **Conflict warnings** — surfaced at two points: live, as soon as any two tasks overlap, and again specifically within whatever plan gets generated.
+- **Recurrence** — demonstrated in `main.py` below rather than the UI, since the UI doesn't yet expose a "mark complete" button.
+
+### Sample CLI output (`python main.py`)
+
+`main.py` adds three pets with eight tasks out of chronological order, then walks through sorting, marking recurring tasks complete, filtering to completed tasks, and conflict detection:
+
+```
+$ python main.py
+All tasks (unsorted):
+  Task('Evening walk', 18:00, high, due=2026-10-25)
+  Task('Feeding', 09:00, medium, due=2026-10-25)
+  Task('Cage cleaning', 10:00, low, due=2026-10-25)
+  Task('Morning walk', 08:00, high, due=2026-10-25)
+  Task('Vet checkup', 12:00, high, due=2026-10-25)
+  Task('Evening feeding', 18:20, medium, due=2026-10-25)
+  Task('Brushing', 20:00, low, due=2026-10-25)
+  Task('Litter box cleaning', 11:00, medium, due=2026-10-25)
+
+All tasks (after sort_by_time):
+  Task('Morning walk', 08:00, high, due=2026-10-25)
+  Task('Feeding', 09:00, medium, due=2026-10-25)
+  Task('Cage cleaning', 10:00, low, due=2026-10-25)
+  Task('Litter box cleaning', 11:00, medium, due=2026-10-25)
+  Task('Vet checkup', 12:00, high, due=2026-10-25)
+  Task('Evening walk', 18:00, high, due=2026-10-25)
+  Task('Evening feeding', 18:20, medium, due=2026-10-25)
+  Task('Brushing', 20:00, low, due=2026-10-25)
+
+Marking tasks as done:
+  Morning walk (Biscuit) -> done
+  Feeding (Whiskers) -> done
+  Cage cleaning (Clover) -> done
+
+Completed tasks (filtered from sorted list):
+  Task('Morning walk', 08:00, high, due=2026-10-25)
+  Task('Feeding', 09:00, medium, due=2026-10-25)
+  Task('Cage cleaning', 10:00, low, due=2026-10-25)
+
+Next occurrences auto-scheduled from recurring tasks:
+  Morning walk (Biscuit) -> Task('Morning walk', 08:00, high, due=2026-10-26)
+  Feeding (Whiskers) -> Task('Feeding', 09:00, medium, due=2026-10-26)
+  Cage cleaning (Clover) -> Task('Cage cleaning', 10:00, low, due=2026-11-01)
+
+Conflict check:
+  WARNING: Conflict: 'Evening walk' (Biscuit, 18:00) overlaps with 'Evening feeding' (Clover, 18:20)
+  WARNING: Conflict: 'Grooming appointment' (Biscuit, 09:00) overlaps with 'Feeding' (Whiskers, 09:00)
+```
+
+This shows `mark_complete()` advancing `due_date` by a day (`Morning walk`, `Feeding`) versus a week (`Cage cleaning`, since it's `weekly`), and `detect_conflicts()` catching an overlap even though `Evening walk` and `Grooming appointment` belong to different pets added at different points in the script.

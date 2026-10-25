@@ -93,20 +93,35 @@ if owner.pets:
 else:
     st.info("Add a pet first before adding tasks.")
 
+scheduler = Scheduler()
+
 all_tasks = owner.get_all_tasks()
 if all_tasks:
-    st.write("Current tasks:")
+    st.write("Current tasks (sorted by time):")
+    sorted_tasks = scheduler.sort_by_time(all_tasks)
     st.table(
         [
             {
+                "time": t.time_str(),
                 "pet": t.pet.name,
                 "task": t.description,
                 "duration_minutes": t.duration_minutes,
                 "priority": t.priority,
             }
-            for t in all_tasks
+            for t in sorted_tasks
         ]
     )
+
+    conflicts = scheduler.detect_conflicts(all_tasks)
+    if conflicts:
+        st.warning(
+            "⚠️ You're double-booked — these tasks overlap, so you can't do "
+            "both in person at the same time:"
+        )
+        for warning in conflicts:
+            st.warning(warning)
+    else:
+        st.success("✅ No time conflicts across your pets' tasks.")
 else:
     st.info("No tasks yet. Add one above.")
 
@@ -120,7 +135,32 @@ available_minutes = st.number_input(
 )
 
 if st.button("Generate schedule"):
-    scheduler = Scheduler()
     plan = scheduler.generate_plan(owner, int(available_minutes))
-    st.markdown("#### Today's Schedule")
-    st.text(scheduler.explain_plan(plan))
+
+    if plan:
+        st.markdown("#### Today's Schedule")
+        plan_conflicts = scheduler.detect_conflicts(plan)
+        if plan_conflicts:
+            st.warning("⚠️ This schedule has overlapping tasks:")
+            for warning in plan_conflicts:
+                st.warning(warning)
+        else:
+            st.success("✅ No overlapping tasks in this schedule.")
+
+        st.table(
+            [
+                {
+                    "time": t.time_str(),
+                    "pet": t.pet.name,
+                    "task": t.description,
+                    "duration_minutes": t.duration_minutes,
+                    "priority": t.priority,
+                }
+                for t in scheduler.sort_by_time(plan)
+            ]
+        )
+
+        with st.expander("Why this plan?"):
+            st.text(scheduler.explain_plan(plan))
+    else:
+        st.info("No tasks fit in the available time.")

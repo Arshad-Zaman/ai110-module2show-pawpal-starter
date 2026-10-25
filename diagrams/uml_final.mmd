@@ -1,0 +1,51 @@
+classDiagram
+    %% Updated to match the final implementation in pawpal_system.py.
+
+    class Owner {
+        +str name
+        +list~Pet~ pets
+        +add_pet(pet) None
+        +remove_pet(pet) None
+        +get_all_tasks() list~Task~
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +str breed
+        +list~Task~ tasks
+        +add_task(task) None
+        +remove_task(task) None
+    }
+
+    class Task {
+        +str description
+        +int scheduled_time
+        +int duration_minutes
+        +str priority
+        +str recurrence
+        +bool completed
+        +Pet pet
+        +date due_date
+        +is_recurring() bool
+        +conflicts_with(other) bool
+        +mark_complete() Task
+        +time_str() str
+    }
+
+    class Scheduler {
+        +generate_plan(owner, available_minutes) list~Task~
+        +sort_by_priority(tasks) list~Task~
+        +sort_by_time(tasks) list~Task~
+        +detect_conflicts(tasks) list~str~
+        +filter_tasks(tasks, pet_name, completed) list~Task~
+        +filter_by_time(tasks, available_minutes) list~Task~
+        +explain_plan(plan) str
+    }
+
+    Owner "1" --> "many" Pet : owns
+    Pet "1" --> "many" Task : has
+    Task "many" --> "1" Pet : belongs to
+    Task ..> Task : mark_complete() creates next occurrence
+    Scheduler ..> Owner : reads get_all_tasks()
+    Scheduler ..> Task : sorts, filters, schedules
