@@ -80,14 +80,20 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
-
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.sort_by_time()`, `Scheduler.sort_by_priority()` | Sorts by scheduled time (earliest first) or priority (high to low) |
+| Filtering | `Scheduler.filter_tasks()` | Filters by pet name, completion status, or both at once |
+| Conflict handling | `Scheduler.detect_conflicts()`, `Task.conflicts_with()` | Flags overlapping time slots across all pets, same day |
+| Recurring tasks | `Task.mark_complete()` | Auto-schedules the next occurrence for daily/weekly tasks |
+
+**Task sorting.** `Scheduler.sort_by_time()` orders tasks earliest to latest using `scheduled_time`, pushing anything with no time set to the end. `sort_by_priority()` orders high to low priority. Neither one mutates the original list — both return a new sorted list, so calling them doesn't change `pet.tasks` or `owner.get_all_tasks()`.
+
+**Filtering.** `Scheduler.filter_tasks(tasks, pet_name=None, completed=None)` returns only the tasks matching whichever filters you pass in. Leave `pet_name` or `completed` as `None` to skip that filter, or use both together to, say, get one pet's incomplete tasks in a single call.
+
+**Conflict handling.** `Task.conflicts_with(other)` checks if two tasks overlap in time on the same `due_date`. `Scheduler.detect_conflicts(tasks)` runs that check pairwise across every task passed in, regardless of which pet they belong to, since one owner can't physically do two things at once. It never raises — it just returns a list of warning strings for the caller to print or act on.
+
+**Recurring tasks.** Tasks have a `recurrence` field ("daily", "weekly", or "none") and a `due_date`. When `Task.mark_complete()` is called on a recurring task, it marks the task done and automatically creates the next occurrence as a new `Task` on the same pet, with `due_date` advanced by a day (daily) or a week (weekly), using `datetime.timedelta`.
 
 ## 📸 Demo Walkthrough
 

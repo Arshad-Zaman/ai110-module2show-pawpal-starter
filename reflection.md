@@ -34,6 +34,8 @@ Initially, there was no concrete decision on how to represent when a task happen
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
+Scheduler.detect_conflicts() checks every task against every other task (a simple pairwise loop), instead of sorting tasks by time first and only comparing neighbors. That's O(n²) instead of O(n log n). I went with pairwise because it's reasonable for this scenario: a single owner's tasks for one day is at most a few dozen items, so the extra comparisons cost nothing in practice, and the pairwise version is a lot easier to read and verify than a sweep-line approach. If PawPal+ ever scheduled across a whole household for a week or month instead of a day, this would be worth revisiting.
+
 ---
 
 ## 3. AI Collaboration
