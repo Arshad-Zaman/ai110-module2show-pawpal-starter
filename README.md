@@ -64,19 +64,48 @@ Today's Schedule:
 
 ## 🧪 Testing PawPal+
 
-```bash
-# Run the full test suite:
-pytest
+Run the full suite from the project root with:
 
-# Run with coverage:
-pytest --cov
+```bash
+python -m pytest
 ```
+
+`tests/test_pawpal.py` covers the core behaviors the scheduler depends on:
+
+- **Sorting correctness** — `sort_by_time()` returns tasks in chronological order, pushes tasks with no `scheduled_time` to the end, and handles an empty list without error.
+- **Recurrence logic** — marking a `daily` task complete with `mark_complete()` schedules its next occurrence one day later, a `weekly` task schedules one week later, and a `none` task schedules nothing.
+- **Conflict detection** — `detect_conflicts()` flags two tasks that overlap at the same time across different pets, but correctly leaves back-to-back tasks (one ending exactly when the next starts) and same-time tasks on different `due_date`s unflagged.
+- A couple of baseline checks on `Task.mark_complete()` and `Pet.add_task()` from earlier in the project.
 
 Sample test output:
 
 ```
-# Paste your pytest output here
+$ python -m pytest -v
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/rizz/Documents/AI110/ai110-module2show-pawpal-starter
+plugins: anyio-4.15.1
+collected 12 items
+
+tests/test_pawpal.py::test_mark_complete_changes_status PASSED           [  8%]
+tests/test_pawpal.py::test_add_task_increases_pet_task_count PASSED      [ 16%]
+tests/test_pawpal.py::test_sort_by_time_returns_chronological_order PASSED [ 25%]
+tests/test_pawpal.py::test_sort_by_time_pushes_unscheduled_tasks_last PASSED [ 33%]
+tests/test_pawpal.py::test_sort_by_time_handles_empty_list PASSED        [ 41%]
+tests/test_pawpal.py::test_mark_complete_on_daily_task_schedules_next_day PASSED [ 50%]
+tests/test_pawpal.py::test_mark_complete_on_weekly_task_schedules_next_week PASSED [ 58%]
+tests/test_pawpal.py::test_mark_complete_on_non_recurring_task_schedules_nothing PASSED [ 66%]
+tests/test_pawpal.py::test_detect_conflicts_flags_overlapping_tasks_same_time PASSED [ 75%]
+tests/test_pawpal.py::test_detect_conflicts_ignores_back_to_back_tasks PASSED [ 83%]
+tests/test_pawpal.py::test_detect_conflicts_ignores_same_time_on_different_due_dates PASSED [ 91%]
+tests/test_pawpal.py::test_detect_conflicts_handles_empty_and_single_task_lists PASSED [100%]
+
+============================== 12 passed in 0.02s ==============================
 ```
+
+**Confidence Level: ⭐⭐⭐⭐☆ (4/5)**
+
+All 12 tests pass, and they cover the three behaviors I was least sure about going in: whether sorting handles unscheduled tasks correctly, whether recurrence actually advances the due date by the right interval, and whether conflict detection respects day boundaries instead of just comparing raw times. I'm not at 5 stars because the suite only exercises `Scheduler` and `Task`/`Pet` in isolation — `generate_plan()` (the method that chains priority sorting with the time-budget filter) and the Streamlit UI in `app.py` aren't covered yet, so I can't be fully confident in how those pieces behave together.
 
 ## 📐 Smarter Scheduling
 
